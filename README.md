@@ -4,13 +4,13 @@ A powerful Neovim plugin that brings **LLVM Machine Code Analyzer (LLVM-MCA)** d
 
 ## Features
 
-- ** Live Analysis** - Automatic LLVM-MCA analysis on file save with configurable debouncing
-- ** Interactive Timeline** - View instruction timelines with dependency highlighting
-- ** Dependency Analysis** - Real-time instruction dependency detection with cursor-based highlighting
-- ** Smart Compilation** - Automatic integration with `compile_commands.json`
-- ** Flexible Configuration** - Custom compile flags and CPU architecture settings  
-- ** Precise Analysis** - Set start/end markers to analyze specific code sections
-- ** Clean Interface** - Streamlined commands with unified configuration management
+- **Live Analysis** - Automatic LLVM-MCA analysis on file save with configurable debouncing
+- **Interactive Timeline** - View instruction timelines with dependency highlighting
+- **Dependency Analysis** - Real-time instruction dependency detection with cursor-based highlighting
+- **Smart Compilation** - Automatic integration with `compile_commands.json`
+- **Flexible Configuration** - Custom compile flags and CPU architecture settings  
+- **Precise Analysis** - Set start/end markers to analyze specific code sections
+- **Clean Interface** - Streamlined commands with unified configuration management
 
 ## Quick Start
 
