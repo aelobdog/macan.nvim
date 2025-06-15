@@ -1,0 +1,29 @@
+# Compiled Lua files
+*.luac
+
+# Swap files
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+
+# Development and testing files
+test_*.c
+simple_test.c
+test_deps.c
+temp
+*.s
+json_report.json
+
+# Debug logs
+debug.log 
