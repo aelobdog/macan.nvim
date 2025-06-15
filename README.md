@@ -25,7 +25,7 @@ A powerful Neovim plugin that brings **LLVM Machine Code Analyzer (LLVM-MCA)** d
 #### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 ```lua
 {
-  'your-username/macan-tui',
+  'aelobdog/macan.nvim',
   config = function()
     require('macan').setup({
       -- Optional configuration
@@ -44,7 +44,7 @@ A powerful Neovim plugin that brings **LLVM Machine Code Analyzer (LLVM-MCA)** d
 #### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
 ```lua
 use {
-  'your-username/macan-tui',
+  'aelobdog/macan.nvim',
   config = function()
     require('macan').setup()
   end
@@ -53,7 +53,7 @@ use {
 
 #### Using [vim-plug](https://github.com/junegunn/vim-plug)
 ```vim
-Plug 'your-username/macan-tui'
+Plug 'aelobdog/macan.nvim'
 ```
 ```lua
 -- Add to your init.lua:
@@ -62,20 +62,20 @@ require('macan').setup()
 
 #### Using [dein.vim](https://github.com/Shougo/dein.vim)
 ```vim
-call dein#add('your-username/macan-tui')
+call dein#add('aelobdog/macan.nvim')
 ```
 
 #### Using [pathogen](https://github.com/tpope/vim-pathogen)
 ```bash
 cd ~/.vim/bundle
-git clone https://github.com/your-username/macan-tui.git
+git clone https://github.com/aelobdog/macan.nvim.git
 ```
 
 #### Manual Installation
 ```bash
 # Clone to Neovim's pack directory
-git clone https://github.com/your-username/macan-tui.git \
-  ~/.local/share/nvim/site/pack/plugins/start/macan-tui
+git clone https://github.com/aelobdog/macan.nvim.git \
+  ~/.local/share/nvim/site/pack/plugins/start/macan.nvim
 ```
 
 **Note**: The plugin works immediately after installation with sensible defaults:
@@ -289,11 +289,11 @@ We welcome contributions! Please see our contributing guidelines:
 
 ### Development Setup
 ```bash
-git clone https://github.com/your-username/macan-tui.git
-cd macan-tui
+git clone https://github.com/aelobdog/macan.nvim.git
+cd macan.nvim
 
 # Install in Neovim for testing
-ln -s $(pwd) ~/.local/share/nvim/site/pack/dev/start/macan-tui
+ln -s $(pwd) ~/.local/share/nvim/site/pack/dev/start/macan.nvim
 ```
 
 ### Code Structure

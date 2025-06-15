@@ -23,14 +23,14 @@ Cheers!
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/your-username/macan-tui.git
-   cd macan-tui
+   git clone https://github.com/aelobdog/macan.nvim.git
+   cd macan.nvim
    ```
 
 2. **Install for development**:
    ```bash
    # Create a symlink in your Neovim config
-   ln -s $(pwd) ~/.local/share/nvim/site/pack/dev/start/macan-tui
+   ln -s $(pwd) ~/.local/share/nvim/site/pack/dev/start/macan.nvim
    ```
 
 3. **Restart Neovim** and test:
@@ -42,7 +42,7 @@ Cheers!
 ## Project Structure
 
 ```
-macan-tui/
+macan.nvim/
 ├── lua/macan/
 │   ├── init.lua                # Main plugin entry point and commands
 │   ├── config.lua              # Configuration management
