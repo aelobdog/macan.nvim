@@ -52,7 +52,72 @@ local function hash_path(path)
   return string.format("%06d", h)
 end
 
-function M.generate_s_file(cfile, start_line, end_line, compile_cmd)
+local function parse_ccjson_command(cmd)
+  local args = {}
+  local i, len = 1, #cmd
+  while i <= len do
+    while i <= len and cmd:sub(i, i):match("%s") do i = i + 1 end -- skip whitespace
+    if i > len then break end
+
+    local arg = ""
+    local in_quote = false
+
+    while i <= len do
+      local c = cmd:sub(i, i)
+      if c == '"' then
+        arg = arg .. c
+        i = i + 1
+        while i <= len do
+          local ch = cmd:sub(i, i)
+          arg = arg .. ch
+          i = i + 1
+          if ch == '"' and cmd:sub(i - 2, i - 2) ~= '\\' then
+            break
+          end
+        end
+      elseif c:match("%s") and not in_quote then
+        break
+      else
+        arg = arg .. c
+        i = i + 1
+      end
+    end
+
+    if #arg > 0 then
+      table.insert(args, arg)
+    end
+  end
+  return args
+end
+
+local function clean_compile_command(cmd)
+  local args = parse_ccjson_command(cmd)
+
+  -- Remove first arg (compiler path)
+  table.remove(args, 1)
+
+  local filtered = {}
+
+  for i, arg in ipairs(args) do
+    -- Stop if we hit '--' and ignore everything after
+    if arg == '--' then
+      break
+    end
+
+    local lower = arg:lower()
+    if not (
+      lower:match('^-dccompiler=') or
+      lower:match('^-dcxxcompiler=') or
+      lower:match('^/fo')
+    ) then
+      table.insert(filtered, arg)
+    end
+  end
+
+  return filtered
+end
+
+function M.generate_s_file(cfile, start_line, end_line, compile_cmd, compiler)
   -- Read source lines
   local fd = io.open(cfile, 'r')
   if not fd then return nil, 'Failed to open source file' end
@@ -89,33 +154,31 @@ function M.generate_s_file(cfile, start_line, end_line, compile_cmd)
   -- Keep track of created files for cleanup
   temp_files[cfile] = {c = tmp_c_path, s = tmp_s_path}
   
-  -- Extract include paths from the compile command
-  local include_paths = {}
-  for inc_path in compile_cmd:gmatch("-I([^ ]+)") do
-    table.insert(include_paths, "-I" .. inc_path)
-  end
-  
-  -- Extract defines from the compile command
-  local defines = {}
-  for define in compile_cmd:gmatch("-D([^ ]+)") do
-    table.insert(defines, "-D" .. define)
-  end
-  
+  -- flags extracted from the compile_commands.json entry
+  local flags = clean_compile_command(compile_cmd)
+
   -- Build a simplified compile command with includes and defines
-  local cmd = "gcc -S"
-  
-  -- Add all include paths
-  for _, inc in ipairs(include_paths) do
-    cmd = cmd .. " " .. inc
+  local asm_flag = ""
+  local compiler_no_ext = compiler:gsub("%.exe$", "")
+
+  if compiler_no_ext == "gcc" or compiler_no_ext == "clang" then
+    asm_flag = "-S -o " .. tmp_s_path
+  elseif compiler_no_ext == "clang-cl" or compiler_no_ext == "cl" then
+    asm_flag = "/c /Fa" .. tmp_s_path
+  else
+    vim.notify("Unrecognized compiler.")
+    return
   end
+
+  local cmd = compiler .. " " .. asm_flag
   
-  -- Add all defines
-  for _, def in ipairs(defines) do
-    cmd = cmd .. " " .. def
+  -- Add all flags from the compile_commands.json entry 
+  for _, flag in ipairs(flags) do
+    cmd = cmd .. " " .. flag
   end
   
   -- Add input and output files
-  cmd = cmd .. " " .. tmp_c_path .. " -o " .. tmp_s_path
+  cmd = cmd .. " " .. tmp_c_path
   
   -- Log debug info
   log_debug("Original compile command: " .. compile_cmd)
@@ -176,4 +239,4 @@ function M.get_s_file_path(cfile)
   return nil
 end
 
-return M 
+return M

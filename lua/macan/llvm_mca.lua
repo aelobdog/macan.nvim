@@ -6,12 +6,22 @@ local function trim(s)
 end
 
 -- Check if llvm-mca is available in PATH
-function M.is_available()
-  local handle = io.popen("which llvm-mca 2>/dev/null")
+function M.is_available(program)
+  local cmd
+  if vim.fn.has('win32') == 1 then
+    cmd = 'where ' .. program .. ' 2>nul'
+  else
+    cmd = 'command -v ' .. program .. ' 2>/dev/null'
+  end
+
+  vim.notify(cmd)
+  local handle = io.popen(cmd)
   if not handle then return false end
+
   local result = handle:read("*a")
   handle:close()
-  return result ~= nil and result ~= ''
+
+  return result ~= nil and result:match("%S") ~= nil  -- check for non-whitespace
 end
 
 -- Run llvm-mca on a file and return output

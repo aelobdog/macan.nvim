@@ -87,7 +87,15 @@ local function run_analysis_for_file(filepath)
   
   -- Check if llvm-mca is available
   local mca = require('macan.llvm_mca')
-  if not mca.is_available() then
+  local config = require('macan.config').get()
+  local mca_config = config.llvm_mca
+  local compiler_config = config.compiler
+
+  if not mca.is_available(mca_config.path) then
+    return
+  end
+
+  if not mca.is_available(compiler_config.path) then
     return
   end
   
@@ -112,7 +120,7 @@ local function run_analysis_for_file(filepath)
   local custom_flags = flags_ui.get_custom_flags(filepath)
   local use_cmd = custom_flags or compile_cmd
   
-  local sfile, gen_err = asmgen_mod.generate_s_file(filepath, markers.start, markers.end_, use_cmd)
+  local sfile, gen_err = asmgen_mod.generate_s_file(filepath, markers.start, markers.end_, use_cmd, compiler_config.path)
   if not sfile then
     vim.notify('Live update: Error generating .s file: ' .. (gen_err or 'Unknown error'), vim.log.levels.WARN)
     running_analysis[filepath] = false

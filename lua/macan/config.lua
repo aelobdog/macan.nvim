@@ -5,7 +5,11 @@ local default_config = {
   llvm_mca = {
     path = "llvm-mca",  -- Path to llvm-mca executable
     march = nil,             -- No default architecture - let LLVM-MCA auto-detect
-    extra_args = "-iterations=1 -timeline -timeline-max-iterations=1 -timeline-max-cycles=1000"
+    extra_args = "-iterations=1 -timeline -timeline-max-iterations=1 -timeline-max-cycles=1000",
+  },
+  compiler = {
+    path = "gcc", -- Default compiler
+    asm_flag = "-S"
   },
   live_update = {
     enabled = true,

@@ -92,6 +92,14 @@ Use ':MacanConfig help' for available subcommands.
       else
         vim.notify('No -mcpu setting configured (using LLVM-MCA default)', vim.log.levels.INFO)
       end
+    
+    elseif subcommand == 'compiler' then
+      local compiler = config.get_value('llvm_mca.compiler')
+      if compiler then
+        vim.notify('Current compiler: ' .. compiler, vim.log.levels.INFO)
+      else
+        vim.notify('No compiler setting configured (using LLVM-MCA default)', vim.log.levels.INFO)
+      end
       
     elseif subcommand == 'extra-args' then
       local extra_args = config.get_value('llvm_mca.extra_args')
@@ -185,10 +193,18 @@ MacanConfig subcommands:
     local asmgen_mod = require('macan.asmgen')
     local flags_ui = require('macan.compile_flags_ui')
     local live_update = require('macan.live_update')
-    
-    if not mca.is_available() then
-      vim.notify('llvm-mca is NOT available in PATH.', vim.log.levels.ERROR)
+    local config = require('macan.config').get()
+    local mca_config = config.llvm_mca
+    local compiler_config = config.compiler
+
+    if not mca.is_available(mca_config.path) then
+      vim.notify(mca_config.path .. ' is NOT available in PATH.', vim.log.levels.ERROR)
       return
+    end
+    
+    if not mca.is_available(compiler_config.path) then
+      vim.notify(compiler_config.path .. ' is NOT available in PATH.', vim.log.levels.ERROR)
+      return      
     end
     
     local filepath = vim.api.nvim_buf_get_name(0)
@@ -223,7 +239,7 @@ MacanConfig subcommands:
     local custom_flags = flags_ui.get_custom_flags(filepath)
     local use_cmd = custom_flags or compile_cmd
     
-    local sfile, gen_err = asmgen_mod.generate_s_file(filepath, markers.start, markers.end_, use_cmd)
+    local sfile, gen_err = asmgen_mod.generate_s_file(filepath, markers.start, markers.end_, use_cmd, compiler_config.path)
     
     if sfile then
       -- Check if the file actually exists
@@ -311,11 +327,20 @@ MacanConfig subcommands:
     end
   })
 
-
-
-
-
-
+  -- Configuration commands for -mcpu flag
+  vim.api.nvim_create_user_command('MacanSetCompiler', function(opts)
+    local config = require('macan.config')
+    local compiler = opts.args
+    if compiler == '' then
+      vim.notify('Usage: :MacanSetcompiler <compiler>', vim.log.levels.ERROR)
+      vim.notify('Example: :MacanSetcompiler clang', vim.log.levels.INFO)
+      return
+    end
+    config.set_value('compiler.path', compiler)
+    vim.notify('Set compiler ' .. compiler .. ' for creating the .s file', vim.log.levels.INFO)
+  end, { 
+    nargs = 1
+  })
   
   vim.api.nvim_create_user_command('MacanCloseAnalysis', function()
     local output_mod = require('macan.output')
@@ -324,8 +349,6 @@ MacanConfig subcommands:
       vim.notify('Closed analysis windows', vim.log.levels.INFO)
     end
   end, {})
-
-
 
   -- Register cleanup on Neovim exit
   vim.api.nvim_create_autocmd('VimLeavePre', {
