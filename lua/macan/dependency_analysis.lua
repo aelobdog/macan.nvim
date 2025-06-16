@@ -90,8 +90,6 @@ ASSEMBLY SYNTAX DETECTION:
 
 DEPENDENCY TYPES DETECTED:
 1. RAW (Read-After-Write): Current instruction reads a register/memory that previous instruction writes
-2. WAW (Write-After-Write): Both instructions write to same register/memory
-3. WAR (Write-After-Read): Current instruction writes to register/memory that previous instruction reads
 
 HEURISTICS USED:
 - Timeline stalls indicate potential dependencies
@@ -125,59 +123,114 @@ end
 local function get_register_aliases()
   return {
     -- 64-bit registers and their aliases
-    rax = {"rax", "eax", "ax", "al", "ah"},
-    rbx = {"rbx", "ebx", "bx", "bl", "bh"},
-    rcx = {"rcx", "ecx", "cx", "cl", "ch"},
-    rdx = {"rdx", "edx", "dx", "dl", "dh"},
-    rsi = {"rsi", "esi", "si", "sil"},
-    rdi = {"rdi", "edi", "di", "dil"},
-    rbp = {"rbp", "ebp", "bp", "bpl"},
-    rsp = {"rsp", "esp", "sp", "spl"},
-    r8 = {"r8", "r8d", "r8w", "r8b"},
-    r9 = {"r9", "r9d", "r9w", "r9b"},
-    r10 = {"r10", "r10d", "r10w", "r10b"},
-    r11 = {"r11", "r11d", "r11w", "r11b"},
-    r12 = {"r12", "r12d", "r12w", "r12b"},
-    r13 = {"r13", "r13d", "r13w", "r13b"},
-    r14 = {"r14", "r14d", "r14w", "r14b"},
-    r15 = {"r15", "r15d", "r15w", "r15b"},
+    rax = { "rax", "eax", "ax", "al", "ah" },
+    rbx = { "rbx", "ebx", "bx", "bl", "bh" },
+    rcx = { "rcx", "ecx", "cx", "cl", "ch" },
+    rdx = { "rdx", "edx", "dx", "dl", "dh" },
+    rsi = { "rsi", "esi", "si", "sil" },
+    rdi = { "rdi", "edi", "di", "dil" },
+    rbp = { "rbp", "ebp", "bp", "bpl" },
+    rsp = { "rsp", "esp", "sp", "spl" },
+    r8 = { "r8", "r8d", "r8w", "r8b" },
+    r9 = { "r9", "r9d", "r9w", "r9b" },
+    r10 = { "r10", "r10d", "r10w", "r10b" },
+    r11 = { "r11", "r11d", "r11w", "r11b" },
+    r12 = { "r12", "r12d", "r12w", "r12b" },
+    r13 = { "r13", "r13d", "r13w", "r13b" },
+    r14 = { "r14", "r14d", "r14w", "r14b" },
+    r15 = { "r15", "r15d", "r15w", "r15b" },
     -- XMM registers
-    xmm0 = {"xmm0"}, xmm1 = {"xmm1"}, xmm2 = {"xmm2"}, xmm3 = {"xmm3"},
-    xmm4 = {"xmm4"}, xmm5 = {"xmm5"}, xmm6 = {"xmm6"}, xmm7 = {"xmm7"},
-    xmm8 = {"xmm8"}, xmm9 = {"xmm9"}, xmm10 = {"xmm10"}, xmm11 = {"xmm11"},
-    xmm12 = {"xmm12"}, xmm13 = {"xmm13"}, xmm14 = {"xmm14"}, xmm15 = {"xmm15"},
+    xmm0 = { "xmm0" },
+    xmm1 = { "xmm1" },
+    xmm2 = { "xmm2" },
+    xmm3 = { "xmm3" },
+    xmm4 = { "xmm4" },
+    xmm5 = { "xmm5" },
+    xmm6 = { "xmm6" },
+    xmm7 = { "xmm7" },
+    xmm8 = { "xmm8" },
+    xmm9 = { "xmm9" },
+    xmm10 = { "xmm10" },
+    xmm11 = { "xmm11" },
+    xmm12 = { "xmm12" },
+    xmm13 = { "xmm13" },
+    xmm14 = { "xmm14" },
+    xmm15 = { "xmm15" },
     -- YMM registers
-    ymm0 = {"ymm0", "xmm0"}, ymm1 = {"ymm1", "xmm1"}, ymm2 = {"ymm2", "xmm2"},
-    ymm3 = {"ymm3", "xmm3"}, ymm4 = {"ymm4", "xmm4"}, ymm5 = {"ymm5", "xmm5"},
-    ymm6 = {"ymm6", "xmm6"}, ymm7 = {"ymm7", "xmm7"}, ymm8 = {"ymm8", "xmm8"},
-    ymm9 = {"ymm9", "xmm9"}, ymm10 = {"ymm10", "xmm10"}, ymm11 = {"ymm11", "xmm11"},
-    ymm12 = {"ymm12", "xmm12"}, ymm13 = {"ymm13", "xmm13"}, ymm14 = {"ymm14", "xmm14"},
-    ymm15 = {"ymm15", "xmm15"}
+    ymm0 = { "ymm0", "xmm0" },
+    ymm1 = { "ymm1", "xmm1" },
+    ymm2 = { "ymm2", "xmm2" },
+    ymm3 = { "ymm3", "xmm3" },
+    ymm4 = { "ymm4", "xmm4" },
+    ymm5 = { "ymm5", "xmm5" },
+    ymm6 = { "ymm6", "xmm6" },
+    ymm7 = { "ymm7", "xmm7" },
+    ymm8 = { "ymm8", "xmm8" },
+    ymm9 = { "ymm9", "xmm9" },
+    ymm10 = { "ymm10", "xmm10" },
+    ymm11 = { "ymm11", "xmm11" },
+    ymm12 = { "ymm12", "xmm12" },
+    ymm13 = { "ymm13", "xmm13" },
+    ymm14 = { "ymm14", "xmm14" },
+    ymm15 = { "ymm15", "xmm15" },
+    -- ZMM registers
+    zmm0 = { "zmm0", "ymm0", "xmm0" },
+    zmm1 = { "zmm1", "ymm1", "xmm1" },
+    zmm2 = { "zmm2", "ymm2", "xmm2" },
+    zmm3 = { "zmm3", "ymm3", "xmm3" },
+    zmm4 = { "zmm4", "ymm4", "xmm4" },
+    zmm5 = { "zmm5", "ymm5", "xmm5" },
+    zmm6 = { "zmm6", "ymm6", "xmm6" },
+    zmm7 = { "zmm7", "ymm7", "xmm7" },
+    zmm8 = { "zmm8", "ymm8", "xmm8" },
+    zmm9 = { "zmm9", "ymm9", "xmm9" },
+    zmm10 = { "zmm10", "ymm10", "xmm10" },
+    zmm11 = { "zmm11", "ymm11", "xmm11" },
+    zmm12 = { "zmm12", "ymm12", "xmm12" },
+    zmm13 = { "zmm13", "ymm13", "xmm13" },
+    zmm14 = { "zmm14", "ymm14", "xmm14" },
+    zmm15 = { "zmm15", "ymm15", "xmm15" },
+    zmm16 = { "zmm16", "ymm16", "xmm16" },
+    zmm17 = { "zmm17", "ymm17", "xmm17" },
+    zmm18 = { "zmm18", "ymm18", "xmm18" },
+    zmm19 = { "zmm19", "ymm19", "xmm19" },
+    zmm20 = { "zmm20", "ymm20", "xmm20" },
+    zmm21 = { "zmm21", "ymm21", "xmm21" },
+    zmm22 = { "zmm22", "ymm22", "xmm22" },
+    zmm23 = { "zmm23", "ymm23", "xmm23" },
+    zmm24 = { "zmm24", "ymm24", "xmm24" },
+    zmm25 = { "zmm25", "ymm25", "xmm25" },
+    zmm26 = { "zmm26", "ymm26", "xmm26" },
+    zmm27 = { "zmm27", "ymm27", "xmm27" },
+    zmm28 = { "zmm28", "ymm28", "xmm28" },
+    zmm29 = { "zmm29", "ymm29", "xmm29" },
+    zmm30 = { "zmm30", "ymm30", "xmm30" },
+    zmm31 = { "zmm31", "ymm31", "xmm31" }
   }
 end
 
 -- Check if two registers are aliases of each other
 local function are_aliased_registers(reg1, reg2)
   local aliases = get_register_aliases()
-  
+
   -- Normalize register names (remove % prefix if present)
   reg1 = reg1:gsub("^%%", "")
   reg2 = reg2:gsub("^%%", "")
-  
+
   for base, alias_list in pairs(aliases) do
     local reg1_matches = false
     local reg2_matches = false
-    
+
     for _, alias in ipairs(alias_list) do
       if reg1 == alias then reg1_matches = true end
       if reg2 == alias then reg2_matches = true end
     end
-    
+
     if reg1_matches and reg2_matches then
       return true
     end
   end
-  
+
   return false
 end
 
@@ -186,13 +239,13 @@ end
 local function extract_registers_from_operand(operand)
   operand = trim(operand)
   local registers = {}
-  
+
   -- Direct register reference
   local reg = operand:match("^%%?([a-z]+[0-9]*[a-z]*)$")
   if reg then 
     return {reg}, false, nil 
   end
-  
+
   -- Memory operand - extract ALL registers from complex addressing
   -- AT&T: offset(%base,%index,scale) or (%base) or (, %index, scale)
   if operand:match("%(") then
@@ -213,7 +266,7 @@ local function extract_registers_from_operand(operand)
     end
     return registers, true, operand
   end
-  
+
   -- Intel syntax memory: [base+index*scale+offset]
   if operand:match("%[") then
     local mem_content = operand:match("%[([^%]]+)%]")
@@ -225,7 +278,7 @@ local function extract_registers_from_operand(operand)
     end
     return registers, true, operand
   end
-  
+
   return {}, false, nil
 end
 
@@ -244,7 +297,7 @@ local function parse_instruction_operands(instruction, syntax)
     sources = {},  -- Registers/memory read by this instruction
     destinations = {}  -- Registers/memory written by this instruction
   }
-  
+
   -- Remove instruction mnemonic to get operands
   -- Handle extra whitespace in instruction text
   instruction = trim(instruction)
@@ -252,12 +305,12 @@ local function parse_instruction_operands(instruction, syntax)
   if not operand_str then
         return operands
   end
-  
+
   -- Split operands by comma, but respect parentheses
   local ops = {}
   local current_op = ""
   local paren_depth = 0
-  
+
   for i = 1, #operand_str do
     local char = operand_str:sub(i, i)
     if char == "(" then
@@ -274,12 +327,12 @@ local function parse_instruction_operands(instruction, syntax)
       current_op = current_op .. char
     end
   end
-  
+
   -- Add the last operand
   if current_op ~= "" then
     table.insert(ops, trim(current_op))
   end
-  
+
   -- Simplified approach: use syntax rules regardless of specific instruction
   if syntax == "att" then
     -- AT&T syntax: generally source, destination
