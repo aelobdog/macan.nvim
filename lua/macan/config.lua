@@ -9,7 +9,6 @@ local default_config = {
   },
   compiler = {
     path = "gcc", -- Default compiler
-    asm_flag = "-S"
   },
   live_update = {
     enabled = true,
