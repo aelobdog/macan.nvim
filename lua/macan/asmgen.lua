@@ -58,7 +58,7 @@ local function get_directory(filepath)
         return nil
     end
     -- Use fnamemodify to extract directory (works on Windows and Unix)
-    local dir = vim.fn.fnamemodify(filepath, ":h")
+    local dir = vim.fn.fnamemodify(filepath, ":p:h")
     if dir == "" or dir == "." then
         print("Error: Could not extract directory from " .. filepath)
         return nil
