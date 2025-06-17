@@ -12,6 +12,9 @@ A powerful Neovim plugin that brings **LLVM Machine Code Analyzer (LLVM-MCA)** d
 - **Precise Analysis** - Set start/end markers to analyze specific code sections
 - **Clean Interface** - Streamlined commands with unified configuration management
 
+## Screenshot
+![screenshot of macan.nvim](screenshot.jpg)
+
 ## Quick Start
 
 ### Prerequisites
@@ -127,6 +130,7 @@ Call `setup()` only if you want to customize these defaults.
 | `:MacanEditCompileFlags` | Edit compile flags for current file |
 | `:MacanClearCustomFlags` | Clear custom compile flags |
 | `:MacanSetMarch <arch>` | Set CPU architecture (e.g., skylake) |
+| `:MacanSetCompiler <arch>` | Set CPU architecture (e.g., skylake) |
 | `:MacanConfig [subcommand]` | Unified configuration management |
 
 ### Help

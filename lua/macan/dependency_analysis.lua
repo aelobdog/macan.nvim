@@ -11,28 +11,28 @@ local function parse_timeline_line(line)
   -- Example: [0,1]     D=====eeeeeeeeER    .    .    .    .  .   movss	(%rax), %xmm0
   local index_pattern = "%[(%d+),(%d+)%]"
   local iteration, instruction_idx = line:match(index_pattern)
-  
+
   if not iteration or not instruction_idx then
     return nil
   end
-  
+
   -- Find the instruction at the end - it starts with a letter and contains assembly syntax
   -- Look for pattern: mnemonic followed by operands (with tabs/spaces)
   local instruction = line:match("([a-z][a-z0-9]*[qwlbsd]?%s+[^%s].*)$")
-  
+
   if not instruction then
     return nil
   end
-  
+
   -- Extract timeline pattern (between ] and instruction)
   local bracket_end = line:find("%]")
   local instr_start = line:find(instruction, 1, true)
   local timeline_pattern = ""
-  
+
   if bracket_end and instr_start then
     timeline_pattern = line:sub(bracket_end + 1, instr_start - 1)
   end
-  
+
   return {
     iteration = tonumber(iteration),
     index = tonumber(instruction_idx),
@@ -49,7 +49,7 @@ local function analyze_timeline_pattern(timeline)
   local execution_end = nil
   local retire_cycle = nil
   local stall_cycles = {}
-  
+
   for i = 1, #timeline do
     local char = timeline:sub(i, i)
     if char == 'D' then
@@ -64,7 +64,7 @@ local function analyze_timeline_pattern(timeline)
       table.insert(stall_cycles, i - 1)
     end
   end
-  
+
   return {
     dispatch_cycle = dispatch_cycle,
     execution_start = execution_start,
@@ -102,20 +102,20 @@ HEURISTICS USED:
 local function detect_assembly_syntax(instructions)
   local att_indicators = 0
   local intel_indicators = 0
-  
+
   for _, instr in ipairs(instructions) do
     local text = instr.instruction
     -- AT&T syntax indicators
     if text:match("%%[a-z]") then att_indicators = att_indicators + 1 end
     if text:match("%$[0-9]") then att_indicators = att_indicators + 1 end
     if text:match("[a-z]+[qwlb]%s") then att_indicators = att_indicators + 1 end
-    
+
     -- Intel syntax indicators (less reliable, but absence of AT&T indicators)
     if not text:match("%%") and text:match("[a-z]+%s+[a-z]") then
       intel_indicators = intel_indicators + 1
     end
   end
-  
+
   return att_indicators > intel_indicators and "att" or "intel"
 end
 
@@ -369,12 +369,12 @@ local function parse_instruction_operands(instruction, syntax)
       -- Standard two-operand AT&T: source, destination
       local src_regs, src_is_mem, src_mem = extract_registers_from_operand(ops[1])
       local dst_regs, dst_is_mem, dst_mem = extract_registers_from_operand(ops[2])
-      
+
       -- Include ALL registers from source operand (including memory addressing registers)
       for _, reg in ipairs(src_regs) do
         table.insert(operands.sources, reg)
       end
-      
+
       -- For destination operand, only include as destination if not memory access
       -- But include addressing registers as sources
       for _, reg in ipairs(dst_regs) do
@@ -435,16 +435,16 @@ local function parse_instruction_operands(instruction, syntax)
       -- Standard two-operand: destination, source
       local dst_regs, dst_is_mem, dst_mem = extract_registers_from_operand(ops[1])
       local src_regs, src_is_mem, src_mem = extract_registers_from_operand(ops[2])
-      
+
       -- Include ALL registers from source operand (including memory addressing registers)
       for _, reg in ipairs(src_regs) do
         table.insert(operands.sources, reg)
       end
-      
+
       -- For destination operand, only include as destination if not memory access
       -- But include addressing registers as sources
       for _, reg in ipairs(dst_regs) do
-        if not dst_is_mem then 
+        if not dst_is_mem then
           table.insert(operands.destinations, reg)
           -- For read-modify-write operations, destination is also read
           if not mnemonic:match("^mov") and not mnemonic:match("^lea") then
@@ -468,7 +468,7 @@ local function parse_instruction_operands(instruction, syntax)
       end
     end
   end
-  
+
   return operands
 end
 
@@ -476,17 +476,17 @@ end
 local function check_register_dependency(prev_instr, curr_instr, syntax)
   local prev_ops = parse_instruction_operands(prev_instr.instruction, syntax)
   local curr_ops = parse_instruction_operands(curr_instr.instruction, syntax)
-  
+
   -- Key insight: Only consider it a dependency if the previous instruction
   -- is still executing when the current instruction is dispatched
-  
+
   -- Check timing: if previous instruction finished before current dispatched, no dependency
   if prev_instr.timing.execution_end and curr_instr.timing.dispatch_cycle then
     if prev_instr.timing.execution_end < curr_instr.timing.dispatch_cycle then
       return false, nil  -- Previous finished before current started, no dependency
     end
   end
-  
+
   -- Check for RAW dependencies: current instruction reads what previous wrote
   -- This is the main type of dependency that causes stalls
   for _, prev_dst in ipairs(prev_ops.destinations) do
@@ -496,14 +496,14 @@ local function check_register_dependency(prev_instr, curr_instr, syntax)
       end
     end
   end
-  
+
   return false, nil
 end
 
 -- Find dependencies between instructions using syntax-aware analysis
 local function find_dependencies(instructions, syntax)
   local dependencies = {}
-  
+
   for i, instr in ipairs(instructions) do
     dependencies[i] = {
       instruction = instr,
@@ -513,19 +513,19 @@ local function find_dependencies(instructions, syntax)
       dependency_registers = {}  -- Store which register each dependency is on
     }
   end
-  
+
   -- Track the most recent instruction that wrote to each register
   local last_writer = {}
-  
+
   for i, instr in ipairs(instructions) do
     local curr_ops = parse_instruction_operands(instr.instruction, syntax)
-    
+
     -- Check dependencies: current instruction reads what was recently written
     for _, src_reg in ipairs(curr_ops.sources) do
       local writer_idx = last_writer[src_reg]
       if writer_idx then
         local writer_instr = instructions[writer_idx]
-        
+
         -- Check timing: only dependency if writer still executing when current dispatches
         local has_timing_dependency = false
         if writer_instr.timing.execution_end and instr.timing.dispatch_cycle then
@@ -536,7 +536,7 @@ local function find_dependencies(instructions, syntax)
           -- If we don't have timing info, assume dependency exists
           has_timing_dependency = true
         end
-        
+
         if has_timing_dependency then
           table.insert(dependencies[i].depends_on, writer_idx)
           table.insert(dependencies[writer_idx].dependents, i)
@@ -545,13 +545,13 @@ local function find_dependencies(instructions, syntax)
         end
       end
     end
-    
+
     -- Update last writer for each register this instruction writes to
     for _, dst_reg in ipairs(curr_ops.destinations) do
       last_writer[dst_reg] = i
     end
   end
-  
+
   return dependencies
 end
 
@@ -559,7 +559,7 @@ end
 function M.analyze_dependencies(llvm_mca_output)
   local instructions = {}
   local in_timeline = false
-  
+
   -- Parse the output to extract timeline information
   for line in llvm_mca_output:gmatch("([^\n]*)\n?") do
     if line:match("Timeline view:") then
@@ -569,7 +569,7 @@ function M.analyze_dependencies(llvm_mca_output)
       if line:match("Average [Ww]ait times") or line:match("^Average Wait Time") then
         break
       end
-      
+
       -- Skip header lines and empty lines
       if not line:match("^%s*$") and not line:match("Index%s+") and not line:match("^%s*[0-9]+") then
         local parsed = parse_timeline_line(line)
@@ -580,10 +580,10 @@ function M.analyze_dependencies(llvm_mca_output)
       end
     end
   end
-  
+
   -- Detect assembly syntax from the instructions
   local syntax = detect_assembly_syntax(instructions)
-  
+
   -- Debug: print some info about what we parsed
   print(string.format("Parsed %d instructions, detected %s syntax", #instructions, syntax))
   if #instructions > 0 then
@@ -592,17 +592,17 @@ function M.analyze_dependencies(llvm_mca_output)
       print(string.format("  [%d] %s", instructions[i].index, instructions[i].instruction))
     end
   end
-  
+
   -- Find dependencies between instructions using syntax-aware analysis
   local dependencies = find_dependencies(instructions, syntax)
-  
+
   -- Debug: count dependencies found
   local dep_count = 0
   for _, dep_info in pairs(dependencies) do
     dep_count = dep_count + #dep_info.depends_on
   end
   print(string.format("Found %d total dependencies", dep_count))
-  
+
   return {
     instructions = instructions,
     dependencies = dependencies,
@@ -616,14 +616,14 @@ function M.get_dependencies_for_instruction(analysis, instruction_index)
   if not analysis.dependencies[instruction_index] then
     return nil
   end
-  
+
   local deps = analysis.dependencies[instruction_index]
   local result = {
     instruction = deps.instruction,
     depends_on = {},
     dependents = {}
   }
-  
+
   -- Get detailed info for dependencies
   for _, dep_idx in ipairs(deps.depends_on) do
     if analysis.dependencies[dep_idx] then
@@ -633,7 +633,7 @@ function M.get_dependencies_for_instruction(analysis, instruction_index)
       })
     end
   end
-  
+
   for _, dep_idx in ipairs(deps.dependents) do
     if analysis.dependencies[dep_idx] then
       table.insert(result.dependents, {
@@ -642,7 +642,7 @@ function M.get_dependencies_for_instruction(analysis, instruction_index)
       })
     end
   end
-  
+
   return result
 end
 
@@ -651,12 +651,12 @@ function M.format_dependencies(deps)
   if not deps then
     return "No dependency information available"
   end
-  
+
   local lines = {}
   table.insert(lines, string.format("Instruction [%d]: %s", 
     deps.instruction.index, deps.instruction.instruction))
   table.insert(lines, "")
-  
+
   if #deps.depends_on > 0 then
     table.insert(lines, "Depends on:")
     for _, dep in ipairs(deps.depends_on) do
@@ -665,9 +665,9 @@ function M.format_dependencies(deps)
   else
     table.insert(lines, "No dependencies")
   end
-  
+
   table.insert(lines, "")
-  
+
   if #deps.dependents > 0 then
     table.insert(lines, "Dependents:")
     for _, dep in ipairs(deps.dependents) do
@@ -676,30 +676,30 @@ function M.format_dependencies(deps)
   else
     table.insert(lines, "No dependents")
   end
-  
+
   return table.concat(lines, "\n")
 end
 
 -- Debug function to test instruction parsing
 function M.debug_instruction_parsing(instruction1, instruction2)
   local syntax = "att"  -- We know it's AT&T from the % symbols
-  
+
   print("=== DEBUG INSTRUCTION PARSING ===")
   print("Instruction 1:", instruction1)
   print("Instruction 2:", instruction2)
   print("Syntax:", syntax)
-  
+
   local ops1 = parse_instruction_operands(instruction1, syntax)
   local ops2 = parse_instruction_operands(instruction2, syntax)
-  
+
   print("\nInstruction 1 operands:")
   print("  Sources:", table.concat(ops1.sources, ", "))
   print("  Destinations:", table.concat(ops1.destinations, ", "))
-  
+
   print("\nInstruction 2 operands:")
   print("  Sources:", table.concat(ops2.sources, ", "))
   print("  Destinations:", table.concat(ops2.destinations, ", "))
-  
+
   -- Create mock instruction objects for the dependency check
   local instr1 = {
     instruction = instruction1,
@@ -709,10 +709,10 @@ function M.debug_instruction_parsing(instruction1, instruction2)
     instruction = instruction2,
     timing = { execution_end = 10, dispatch_cycle = 3 }  -- Mock timing
   }
-  
+
   local has_dep, dep_type = check_register_dependency(instr1, instr2, syntax)
   print("\nDependency check result:", has_dep, dep_type or "none")
-  
+
   return has_dep, dep_type
 end
 

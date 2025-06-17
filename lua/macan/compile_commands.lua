@@ -1,15 +1,24 @@
 local M = {}
 
-local function find_compile_commands_json(start_dir)
-  local dir = start_dir or vim.fn.getcwd()
-  while dir and dir ~= '/' do
-    local candidate = dir .. '/compile_commands.json'
-    local stat = vim.loop.fs_stat(candidate)
-    if stat and stat.type == 'file' then
-      return candidate
-    end
-    dir = dir:match('(.+)/[^/]+$')
+local function find_compile_commands_json(filepath)
+  local root_dir = vim.fs.root(filepath, vim.g.root_spec or {'.git'})
+  local build_dir = root_dir .. '/build' -- TODO: make this configurable
+
+  -- TODO: do a recursive downward search for ccjson?
+  --       or take the relative path (wrt. root_dir) to the ccjson from the user?
+
+  local candidate = root_dir .. '/compile_commands.json'
+  local stat = vim.loop.fs_stat(candidate)
+  if stat and stat.type == 'file' then
+    return candidate
   end
+
+  candidate = build_dir .. '/compile_commands.json'
+  stat = vim.loop.fs_stat(candidate)
+  if stat and stat.type == 'file' then
+    return candidate
+  end
+
   return nil
 end
 
